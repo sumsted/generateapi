@@ -44,10 +44,7 @@ import %(module_name)s
 
 def handle_padded(handler):
     def decorator(**kwargs):
-        if len(kwargs) == 0:
-            r = handler()
-        else:
-            r = handler(kwargs)
+        r = handler(kwargs)
         try:
             callback = request.query.get('callback')
         except Exception, e:
