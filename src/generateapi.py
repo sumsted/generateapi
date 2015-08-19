@@ -2,6 +2,11 @@ import os
 import ast
 import optparse
 
+"""
+Generate a server, client and test modules from a given module.
+Usage: %prog [-v | --view] {python module}
+"""
+
 
 end_point = {'host': '0.0.0.0', 'port': 8080}
 
@@ -26,6 +31,7 @@ client_footer = """if __name__ == '__main__':
 
 
 def write_client(filename, functions):
+    """ Create a client module from a list of function objects. """
     module_name = os.path.splitext(os.path.split(filename)[1])[0]
     with open(module_name + '_client' + '.py', "wt") as oout_file:
         oout_file.write(client_header % end_point)
@@ -71,6 +77,10 @@ run(host='%(host)s', port=%(port)d, debug=True)
 
 
 def write_server(filename, functions):
+    """
+    Create a server module from a list of function objects.
+    The generated stub assumes all parameters are integers. Change it.
+    """
     module_name = os.path.splitext(os.path.split(filename)[1])[0]
     with open(module_name + '_server' + '.py', "wt") as out_file:
         out_file.write(server_header % {'module_name': module_name})
@@ -97,6 +107,10 @@ test_footer = ''
 
 
 def write_tests(filename, functions):
+    """
+    Create a test module from a list of function objects.
+    Plan to update the generated stub.
+    """
     module_name = os.path.splitext(os.path.split(filename)[1])[0]
     upper_name = module_name[:1].upper() + module_name[1:]
     with open(module_name + '_test.py', "wt") as out_file:
@@ -114,6 +128,11 @@ def write_tests(filename, functions):
 
 
 def find_functions(ast_body, prefix=None):
+    """
+    Loop through the ast nodes looking for functions and classes.
+    Add functions to the returned list.
+    Call this find_functions again if we find a class.
+    """
     functions = []
     for node in ast_body:
         if isinstance(node, ast.FunctionDef):
@@ -130,9 +149,15 @@ def find_functions(ast_body, prefix=None):
 
 
 def main(filename, view):
+    """
+    Given a module filename use ast to parse the source.
+    Find all functions in ast nodes.
+    Then if view is not set create test, client and server modules.
+    """
     print(filename)
     with open(filename, "rt") as in_file:
-        ast_body = ast.parse(in_file.read(), filename=filename).body
+        ast_body = ast.parse(in_file.read()).body
+        # ast_body = ast.parse(in_file.read(), filename=filename).body
     functions = find_functions(ast_body)
     for function in functions:
         print('%s %s' % (function['name'], str(function['arguments'])))
@@ -143,7 +168,7 @@ def main(filename, view):
 
 
 if __name__ == '__main__':
-    option_parser = optparse.OptionParser("usage: %prog {python module}")
+    option_parser = optparse.OptionParser("Usage: %prog [-v | --view] {python module}")
     option_parser.add_option("-v", "--view", dest="view", default=None, type="string", help="display only")
     (options, args) = option_parser.parse_args()
     if len(args) != 1:
