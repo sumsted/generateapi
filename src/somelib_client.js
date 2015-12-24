@@ -26,3 +26,7 @@ var clientApi = {
         this.g('dog', bone, cb);
     }
 };
+
+clientApi.dog(5, function(err, res, body){
+    console.log('body:'+body);
+})

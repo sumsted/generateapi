@@ -7,7 +7,7 @@ def handle_padded(handler):
         r = handler(kwargs)
         try:
             callback = request.query.get('callback')
-        except Exception, e:
+        except Exception as e:
             callback = None
         if callback is None:
             return r

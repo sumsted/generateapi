@@ -1,4 +1,5 @@
 import os
+import sys
 import ast
 import optparse
 import json
@@ -98,7 +99,7 @@ def handle_padded(handler):
         r = handler(kwargs)
         try:
             callback = request.query.get('callback')
-        except Exception, e:
+        except Exception as e:
             callback = None
         if callback is None:
             return r
@@ -184,8 +185,10 @@ def find_functions(ast_body, prefix=None):
             name = node.name if prefix is None else prefix + '.' + node.name
             arguments = []
             for i, arg in enumerate(node.args.args):
-                if arg.arg != 'self':
+                if int(sys.version[0]) < 3 and arg.id != 'self':
                     arguments.append(arg.arg)
+                elif arg.arg != 'self':
+                        arguments.append(arg.arg)
             functions.append({'name': name, 'arguments': arguments})
         elif isinstance(node, ast.ClassDef):
             name = node.name if prefix is None else prefix + '.' + node.name
