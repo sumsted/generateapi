@@ -1,6 +1,7 @@
 import os
 import ast
 import optparse
+import json
 
 """
 Generate a server, client and test modules from a given module.
@@ -42,6 +43,50 @@ def write_client(filename, functions):
             oout_file.write("def %s(%s):\n" % (function['name'], arguments))
             oout_file.write("    return g('%s', %s)['return_value']\n\n\n" % (function['name'], arguments))
         oout_file.write(client_footer)
+
+        
+js_client_header = """var request = require('request');
+
+var clientApi = {
+    host : 'http://%(host)s:%(port)d',
+    g : function(action, args){
+        if(arguments.length < 2) {
+            return {};
+        } else {
+            var options = {
+                'url': this.host,
+                'method': 'GET'
+            };
+            var callback = arguments[arguments.length - 1];
+            for(var i = 0; i < arguments.length - 1; i++) {
+                options['url'] += '/' + arguments[i];
+            }
+            request(options, function(err, res, body) {
+                callback(err, res, body);
+            });
+        }
+    },
+"""
+
+js_client_footer = """
+};
+"""
+
+def write_js_client(filename, functions):
+    """ Create a client module from a list of function objects. """
+    module_name = os.path.splitext(os.path.split(filename)[1])[0]
+    with open(module_name + '_client' + '.js', "wt") as oout_file:
+        oout_file.write(js_client_header % end_point)
+        for function_counter, function in enumerate(functions):
+            if function_counter > 0:
+                oout_file.write(",\n")
+            arguments = ''
+            for i, arg in enumerate(function['arguments']):
+                arguments += arg if i == 0 else ', ' + arg
+            oout_file.write("    %s: function(%s, cb){\n" % (function['name'], arguments))
+            oout_file.write("        this.g('%s', %s, cb);\n" % (function['name'], arguments))
+            oout_file.write("    }")
+        oout_file.write(js_client_footer)
 
 
 server_header = """from bottle import get, route, request, response, run, post
@@ -139,8 +184,8 @@ def find_functions(ast_body, prefix=None):
             name = node.name if prefix is None else prefix + '.' + node.name
             arguments = []
             for i, arg in enumerate(node.args.args):
-                if arg.id != 'self':
-                    arguments.append(arg.id)
+                if arg.arg != 'self':
+                    arguments.append(arg.arg)
             functions.append({'name': name, 'arguments': arguments})
         elif isinstance(node, ast.ClassDef):
             name = node.name if prefix is None else prefix + '.' + node.name
@@ -164,6 +209,7 @@ def main(filename, view):
     if view is False:
         write_tests(filename, functions)
         write_client(filename, functions)
+        write_js_client(filename, functions)
         write_server(filename, functions)
 
 
