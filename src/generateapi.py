@@ -96,14 +96,16 @@ def write_server(filename, functions):
         out_file.write(server_footer % end_point)
 
 
-test_header = """from unittest import TestCase
+test_header = """from unittest import TestCase, main
 from %s_client import *
 
 
 class Test%s(TestCase):
 """
 
-test_footer = ''
+test_footer = """if __name__ == '__main__':
+    main()
+"""
 
 
 def write_tests(filename, functions):
@@ -136,14 +138,14 @@ def find_functions(ast_body, prefix=None):
     functions = []
     for node in ast_body:
         if isinstance(node, ast.FunctionDef):
-            name = node.name if prefix is None else prefix + '.' + node.name
+            name = node.name if prefix is None else prefix + '_' + node.name
             arguments = []
             for i, arg in enumerate(node.args.args):
                 if arg.id != 'self':
                     arguments.append(arg.id)
             functions.append({'name': name, 'arguments': arguments})
         elif isinstance(node, ast.ClassDef):
-            name = node.name if prefix is None else prefix + '.' + node.name
+            name = node.name if prefix is None else prefix + '_' + node.name
             functions.extend(find_functions(node.body, name))
     return functions
 
@@ -157,7 +159,6 @@ def main(filename, view):
     print(filename)
     with open(filename, "rt") as in_file:
         ast_body = ast.parse(in_file.read()).body
-        # ast_body = ast.parse(in_file.read(), filename=filename).body
     functions = find_functions(ast_body)
     for function in functions:
         print('%s %s' % (function['name'], str(function['arguments'])))
