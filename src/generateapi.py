@@ -187,9 +187,11 @@ def find_functions(ast_body, prefix=None):
             name = node.name if prefix is None else prefix + '_' + node.name
             arguments = []
             for i, arg in enumerate(node.args.args):
-                if int(sys.version[0]) < 3 and arg.id != 'self':
-                    arguments.append(arg.arg)
-                elif arg.arg != 'self':
+                if int(sys.version[0]) < 3:
+                    if arg.id != 'self':
+                        arguments.append(arg.id)
+                else:
+                    if arg.arg != 'self':
                         arguments.append(arg.arg)
             functions.append({'name': name, 'arguments': arguments})
         elif isinstance(node, ast.ClassDef):
